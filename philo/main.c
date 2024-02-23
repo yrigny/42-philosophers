@@ -4,10 +4,10 @@ int	err_arg(void)
 {
 	printf("Error: Bad arguments.\n"
 		"Usage: ./philo <number_of_philosophers>\n"
-		"<time_to_die> (in milliseconds)\n"
-		"<time_to_eat> (in milliseconds)\n"
-		"<time_to_sleep> (in milliseconds)\n"
-		"<number_of_times_each_philosopher_must_eat> (optional)\n");
+		"\t<time_to_die> (in milliseconds)\n"
+		"\t<time_to_eat> (in milliseconds)\n"
+		"\t<time_to_sleep> (in milliseconds)\n"
+		"\t<number_of_times_each_philosopher_must_eat> (optional)\n");
 	return (0);
 }
 
@@ -72,6 +72,9 @@ int	parse_init(int ac, char **av, t_set	*env)
 		if (!av_toi(i, av[i], env))
 			valid_args = 0;
 	}
+	if (valid_args && env->nb_philo && env->time_die
+			&& env->time_eat && env->time_sleep)
+		valid_args = 1;
 	if (valid_args && ac == 5)
 	{
 		env->must_eat = 0;
@@ -82,43 +85,80 @@ int	parse_init(int ac, char **av, t_set	*env)
 	return (valid_args);
 }
 
-int	philo_init(t_philo **philo, int nb_philo)
+int	philo_mutex_init(t_set *env)
 {
 	int	i;
 
-	*philo = malloc(sizeof(t_philo) * nb_philo);
-	if (*philo == NULL)
+	env->philo = malloc(sizeof(t_philo) * env->nb_philo);
+	env->mutex = malloc(sizeof(pthread_mutex_t) * env->nb_philo);
+	if (env->philo == NULL || env->mutex == NULL)
 		return (0);
 	i = -1;
-	while (++i < nb_philo)
+	while (++i < env->nb_philo)
+		pthread_mutex_init(&env->mutex[i], NULL);
+	i = -1;
+	while (++i < env->nb_philo)
 	{
-		(*philo)[i].id = i + 1;
-		(*philo)[i].status = THINK;
+		(env->philo)[i].id = i + 1;
+		(env->philo)[i].status = THINK;
+		(env->philo)[i].mutex = env->mutex;
+		(env->philo)[i].time = &env->time;
 	}
+	return (1);
+}
+
+void	*routine(void *philo)
+{
+	t_philo	*phl;
+	int		fork_l;
+	int		fork_r;
+
+	phl = (t_philo *)philo;
+	fork_l = phl->id - 1;
+	fork_r = phl->id % 4;
+	pthread_mutex_lock(&phl->mutex[fork_l]); // left fork
+	pthread_mutex_lock(&phl->mutex[fork_r]); // right fork
+	printf("%4ld %d is eating\n", *(phl->time), phl->id);
+	usleep(1000000); // to be replaced with env.time_eat
+	pthread_mutex_unlock(&phl->mutex[fork_l]);
+	pthread_mutex_unlock(&phl->mutex[fork_r]);
+	return (NULL);
 }
 
 int	main(int ac, char **av)
 {
 	t_set	env;
-	t_philo *philo;
-	pthread_mutex_t	mutex;
 
 	if (!parse_init(ac, av, &env))
 		return (err_arg());
-	if (!philo_init(&philo, env.nb_philo))
+	if (!philo_mutex_init(&env))
 		return (1);
-	pthread_mutex_init(&mutex, NULL);
-	// threads doing their routine
-	pthread_mutex_destroy(&mutex);
+	int i = -1;
+	while (++i < env.nb_philo)
+		pthread_create(&env.philo[i].tid, NULL, &routine, &env.philo[i]);
+	while (get_ts_in_ms(env.current, env.start) < 10000)
+	{
+		gettimeofday(&env.current, NULL);
+		env.time = get_ts_in_ms(env.current, env.start);
+		usleep(1000);
+	}
+	i = -1;
+	while (++i < env.nb_philo)
+		pthread_join(env.philo[i].tid, NULL);
+	i = -1;
+	while (++i < env.nb_philo)
+		pthread_mutex_destroy(&env.mutex[i]);
+	free(env.mutex);
+	free(env.philo);
 	// {
-	// 	printf("start time: %ld\n", env.start.tv_sec);
-	// 	printf("current time: %ld\n", env.current.tv_sec);
-	// 	printf("nb_philo: %d\n", env.nb_philo);
-	// 	printf("time_die: %d\n", env.time_die);
-	// 	printf("time_eat: %d\n", env.time_eat);
-	// 	printf("time_sleep: %d\n", env.time_sleep);
-	// 	printf("must_eat: %d\n", env.must_eat);
-	// 	printf("must_eat_on: %d\n", env.must_eat_on);
-	// }
+	// printf("start time: %ld\n", env.start.tv_sec);
+	// printf("current time: %ld\n", env.current.tv_sec);
+	// printf("nb_philo: %d\n", env.nb_philo);
+	// printf("time_die: %d\n", env.time_die);
+	// printf("time_eat: %d\n", env.time_eat);
+	// printf("time_sleep: %d\n", env.time_sleep);
+	// printf("must_eat: %d\n", env.must_eat);
+	// printf("must_eat_on: %d\n", env.must_eat_on);
+	//  }
 	return 0;
 }
