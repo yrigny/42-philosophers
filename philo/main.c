@@ -100,9 +100,8 @@ int	philo_mutex_init(t_set *env)
 	while (++i < env->nb_philo)
 	{
 		(env->philo)[i].id = i + 1;
-		(env->philo)[i].status = THINK;
-		(env->philo)[i].mutex = env->mutex;
-		(env->philo)[i].time = &env->time;
+		(env->philo)[i].life = 1;
+		(env->philo)[i].env = (void *)env;
 	}
 	return (1);
 }
@@ -110,18 +109,25 @@ int	philo_mutex_init(t_set *env)
 void	*routine(void *philo)
 {
 	t_philo	*phl;
+	t_set	*env;
 	int		fork_l;
 	int		fork_r;
 
 	phl = (t_philo *)philo;
+	env = (t_set *)phl->env;
 	fork_l = phl->id - 1;
 	fork_r = phl->id % 4;
-	pthread_mutex_lock(&phl->mutex[fork_l]); // left fork
-	pthread_mutex_lock(&phl->mutex[fork_r]); // right fork
-	printf("%4ld %d is eating\n", *(phl->time), phl->id);
-	usleep(1000000); // to be replaced with env.time_eat
-	pthread_mutex_unlock(&phl->mutex[fork_l]);
-	pthread_mutex_unlock(&phl->mutex[fork_r]);
+	pthread_mutex_lock(&env->mutex[fork_l]);
+	pthread_mutex_lock(&env->mutex[fork_r]);
+	printf("%4ld %d has taken a fork\n", env->time, phl->id);
+	printf("%4ld %d has taken a fork\n", env->time, phl->id);
+	printf("%4ld %d is eating\n", env->time, phl->id);
+	usleep(1000 * env->time_eat);
+	pthread_mutex_unlock(&env->mutex[fork_l]);
+	pthread_mutex_unlock(&env->mutex[fork_r]);
+	printf("%4ld %d is sleeping\n", env->time, phl->id);
+	usleep(1000 * env->time_sleep);
+	printf("%4ld %d is thinking\n", env->time, phl->id);
 	return (NULL);
 }
 
@@ -140,7 +146,7 @@ int	main(int ac, char **av)
 	{
 		gettimeofday(&env.current, NULL);
 		env.time = get_ts_in_ms(env.current, env.start);
-		usleep(1000);
+		usleep(250);
 	}
 	i = -1;
 	while (++i < env.nb_philo)

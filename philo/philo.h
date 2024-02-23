@@ -19,21 +19,13 @@
 # include <stdlib.h>
 # include <unistd.h>
 # include <sys/time.h>
-# define EAT 1
-# define SLEEP 2
-# define THINK 3
 
 typedef struct s_philo
 {
     pthread_t       tid;
     int             id;
-    int             status;
-    long            *time;
-    pthread_mutex_t *mutex;
-    // int             fork1;
-    // int             mutex1;
-    // int             fork2;
-    // int             mutex2;
+    int             life;
+    void            *env;
 }                   t_philo;
 
 typedef struct s_set
