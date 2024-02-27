@@ -29,9 +29,9 @@ typedef struct s_philo
 {
     pthread_t       tid;
     int             id;
-    int             eating;
-    int             life;
     int             meal_to_eat;
+    struct timeval  time;
+    long            last_meal;
     void            *env;
 }                   t_philo;
 
@@ -39,7 +39,6 @@ typedef struct s_set
 {
     struct timeval	start;
 	struct timeval	current;
-    long            time;
     int             all_alive;
     int             nb_philo;
     int             time_die;

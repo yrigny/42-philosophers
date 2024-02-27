@@ -1,38 +1,5 @@
 #include "philo.h"
 
-void	printmsg(t_set *env, int id, int status)
-{
-	long	ts;
-	char	*msg;
-
-	gettimeofday(&env->current, NULL);
-	ts = get_ts_in_ms(env->current, env->start);
-	if (status == FORK)
-		msg = "is taking a fork\n";
-	else if (status == EAT)
-		msg = "is eating\n";
-	else if (status == SLEEP)
-		msg = "is sleeping\n";
-	else if (status == THINK)
-		msg = "is thinking\n";
-	else if (status == DIE)
-		"died\n";
-	pthread_mutex_lock(&env->printex);
-	printf("%4ld %d %s\n", ts, id, msg);
-	pthread_mutex_unlock(&env->printex);
-}
-
-int	err_arg(void)
-{
-	printf("Error: Bad arguments.\n"
-		"Usage: ./philo <number_of_philosophers>\n"
-		"\t<time_to_die> (in milliseconds)\n"
-		"\t<time_to_eat> (in milliseconds)\n"
-		"\t<time_to_sleep> (in milliseconds)\n"
-		"\t<number_of_times_each_philosopher_must_eat> (optional)\n");
-	return (0);
-}
-
 long	get_ts_in_ms(struct timeval current, struct timeval start)
 {
 	long	ts_s;
@@ -47,6 +14,40 @@ long	get_ts_in_ms(struct timeval current, struct timeval start)
 	else
 		ts_us = current.tv_usec - start.tv_usec;
 	return (ts_s * 1000 + ts_us / 1000);
+}
+
+void	printmsg(t_set *env, int id, int status)
+{
+	long	ts;
+	char	*msg;
+
+	gettimeofday(&env->current, NULL);
+	ts = get_ts_in_ms(env->current, env->start);
+	msg = NULL;
+	if (status == FORK)
+		msg = "has taken a fork";
+	else if (status == EAT)
+		msg = "is eating";
+	else if (status == SLEEP)
+		msg = "is sleeping";
+	else if (status == THINK)
+		msg = "is thinking";
+	else if (status == DIE)
+		msg = "died";
+	pthread_mutex_lock(&env->printex);
+	printf("%ld %d %s\n", ts, id, msg);
+	pthread_mutex_unlock(&env->printex);
+}
+
+int	err_arg(void)
+{
+	printf("Error: Bad arguments.\n"
+		"Usage: ./philo <number_of_philosophers>\n"
+		"\t<time_to_die> (in milliseconds)\n"
+		"\t<time_to_eat> (in milliseconds)\n"
+		"\t<time_to_sleep> (in milliseconds)\n"
+		"\t<number_of_times_each_philosopher_must_eat> (optional)\n");
+	return (0);
 }
 
 int	av_toi(int i, char *arg, t_set *env)
@@ -123,9 +124,8 @@ int	philo_mutex_init(t_set *env)
 	while (++i < env->nb_philo)
 	{
 		(env->philo)[i].id = i + 1;
-		(env->philo)[i].eating = 0;
-		(env->philo)[i].life = env->time_die;
 		(env->philo)[i].meal_to_eat = env->must_eat;
+		(env->philo)[i].last_meal = 0;
 		(env->philo)[i].env = (void *)env;
 	}
 	return (1);
@@ -141,7 +141,9 @@ void	*routine(void *philo)
 	phl = (t_philo *)philo;
 	env = (t_set *)phl->env;
 	fork_l = phl->id - 1;
-	fork_r = phl->id % 4;
+	fork_r = phl->id % env->nb_philo;
+	if (phl->id % 2 == 0)
+		usleep(env->time_eat / 2);
 	while (env->all_alive)
 	{
 		pthread_mutex_lock(&env->mutex[fork_l]);
@@ -151,14 +153,15 @@ void	*routine(void *philo)
 			printmsg(env, phl->id, FORK);
 			printmsg(env, phl->id, FORK);
 			printmsg(env, phl->id, EAT);
-			phl->eating = 1;
 			usleep(1000 * env->time_eat);
-			phl->life = env->time_die;
-			phl->eating = 0;
+			gettimeofday(&phl->time, NULL);
+			phl->last_meal = get_ts_in_ms(phl->time, env->start);
 		}
-		pthread_mutex_unlock(&env->mutex[fork_l]);
 		pthread_mutex_unlock(&env->mutex[fork_r]);
-		if (env->must_eat_on && (phl->meal_to_eat)-- == 0)
+		pthread_mutex_unlock(&env->mutex[fork_l]);
+		if (env->must_eat_on)
+			phl->meal_to_eat -= 1;
+		if (env->must_eat_on && phl->meal_to_eat == 0)
 			break ;
 		if (env->all_alive)
 		{
@@ -173,7 +176,39 @@ void	*routine(void *philo)
 
 void	monitor(t_set *env)
 {
+	t_philo	*phl;
+	long	time;
+	int		i;
+	int		ended_philo;
+	long	philo_hungry;
 
+	phl = env->philo;
+	while (env->all_alive)
+	{
+		ended_philo = 0;
+		gettimeofday(&env->current, NULL);
+		time = get_ts_in_ms(env->current, env->start);
+		i = -1;
+		while (env->all_alive && ++i < env->nb_philo)
+		{
+			if (env->must_eat_on && phl[i].meal_to_eat == 0)
+				ended_philo += 1;
+			else
+			{
+				philo_hungry = time - phl[i].last_meal;
+				if (philo_hungry >= env->time_die)
+				{
+					printmsg(env, phl[i].id, DIE);
+					env->all_alive = 0;
+				}
+			}
+		}
+		if (env->must_eat_on && ended_philo == env->nb_philo)
+			break ;
+		if (env->all_alive == 0)
+			break ;
+		usleep(50);
+	}
 }
 
 int	main(int ac, char **av)
@@ -184,10 +219,10 @@ int	main(int ac, char **av)
 		return (err_arg());
 	if (!philo_mutex_init(&env))
 		return (1);
+	env.all_alive = 1;
 	int i = -1;
 	while (++i < env.nb_philo)
 		pthread_create(&env.philo[i].tid, NULL, &routine, &env.philo[i]);
-	// main routine function
 	monitor(&env);
 	i = -1;
 	while (++i < env.nb_philo)
