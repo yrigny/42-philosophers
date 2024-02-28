@@ -2,7 +2,7 @@ CC		= cc
 
 CFLAGS		= -Wall -Wextra -Werror -pthread
 
-CFILES		= main.c
+CFILES		= main.c parse_init.c simulate.c
 
 CFILES_B	= main_bonus.c pipex_bonus.c
 
