@@ -143,7 +143,7 @@ void	*routine(void *philo)
 	fork_l = phl->id - 1;
 	fork_r = phl->id % env->nb_philo;
 	if (phl->id % 2 == 0)
-		usleep(env->time_eat / 2);
+		usleep(500 * env->time_eat);
 	while (env->all_alive)
 	{
 		pthread_mutex_lock(&env->mutex[fork_l]);
