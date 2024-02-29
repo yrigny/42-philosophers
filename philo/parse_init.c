@@ -18,8 +18,6 @@ int	av_toi(int i, char *arg, t_set *env)
 	int	idx;
 
 	nbr = 0;
-	if (arg[0] == '0' && arg[1] != '\0')
-		return (0);
 	idx = 0;
 	while (arg[idx] && arg[idx] >= '0' && arg[idx] <= '9')
 		idx++;
@@ -38,7 +36,7 @@ int	av_toi(int i, char *arg, t_set *env)
 		env->time_sleep = nbr;
 	else if (i == 5)
 		env->must_eat = nbr;
-	return (1);
+	return (nbr > 0);
 }
 
 int	philo_mutex_init(t_set *env)
@@ -86,8 +84,5 @@ int	parse_init(int ac, char **av, t_set *env)
 	}
 	else if (valid_args && ac == 6)
 		env->must_eat_on = 1;
-	if (!env->nb_philo || !env->time_die || !env->time_eat || !env->time_sleep
-		|| (env->must_eat_on && !env->must_eat))
-		valid_args = 0;
 	return (valid_args);
 }

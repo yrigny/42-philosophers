@@ -12,36 +12,17 @@
 
 #include "philo.h"
 
-void	printmsg(t_set *env, int id, int status)
-{
-	long	ts;
-	char	*msg;
-
-	gettimeofday(&env->current, NULL);
-	ts = get_ts_in_ms(env->current, env->start);
-	msg = NULL;
-	if (status == FORK)
-		msg = "has taken a fork";
-	else if (status == EAT)
-		msg = "is eating";
-	else if (status == SLEEP)
-		msg = "is sleeping";
-	else if (status == THINK)
-		msg = "is thinking";
-	else if (status == DIE)
-		msg = "died";
-	if (status == DIE)
-		usleep(100);
-	pthread_mutex_lock(&env->printex);
-	printf("%ld %d %s\n", ts, id, msg);
-	pthread_mutex_unlock(&env->printex);
-}
-
 void	philo_eat(t_set *env, t_philo *phl)
 {
 	int	fork_l;
 	int	fork_r;
 
+	if (env->nb_philo == 1)
+	{
+		printmsg(env, phl->id, FORK);
+		phl->last_meal = 0;
+		return ;
+	}
 	fork_l = phl->id - 1;
 	fork_r = phl->id % env->nb_philo;
 	pthread_mutex_lock(&env->mutex[fork_l]);
@@ -71,6 +52,8 @@ void	*routine(void *philo)
 	while (env->all_alive)
 	{
 		philo_eat(env, phl);
+		if (env->nb_philo == 1)
+			break ;
 		if (env->must_eat_on)
 			phl->meal_to_eat -= 1;
 		if (env->must_eat_on && phl->meal_to_eat == 0)
@@ -97,8 +80,8 @@ void	check_famine(t_set *env, int *ended_philo, t_philo phl, long time)
 		philo_hungry = time - phl.last_meal;
 		if (philo_hungry >= env->time_die)
 		{
-			printmsg(env, phl.id, DIE);
 			env->all_alive = 0;
+			printmsg(env, phl.id, DIE);
 		}
 	}
 }

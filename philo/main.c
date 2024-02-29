@@ -12,14 +12,40 @@
 
 #include "philo.h"
 
+void	printmsg(t_set *env, int id, int status)
+{
+	long	ts;
+	char	*msg;
+
+	gettimeofday(&env->current, NULL);
+	ts = get_ts_in_ms(env->current, env->start);
+	msg = NULL;
+	if (status == FORK)
+		msg = "has taken a fork";
+	else if (status == EAT)
+		msg = "is eating";
+	else if (status == SLEEP)
+		msg = "is sleeping";
+	else if (status == THINK)
+		msg = "is thinking";
+	else if (status == DIE)
+		msg = "died";
+	if (status == DIE)
+		usleep(100);
+	pthread_mutex_lock(&env->printex);
+	printf("%ld %d %s\n", ts, id, msg);
+	pthread_mutex_unlock(&env->printex);
+}
+
 int	err_arg(void)
 {
 	printf("Error: Bad arguments.\n"
-		"Usage: ./philo <number_of_philosophers>\n"
-		"\t<time_to_die> (in milliseconds)\n"
-		"\t<time_to_eat> (in milliseconds)\n"
-		"\t<time_to_sleep> (in milliseconds)\n"
-		"\t<number_of_times_each_philosopher_must_eat> (optional)\n");
+		"Usage: ./philo number_of_philosophers\n"
+		"\ttime_to_die (in milliseconds)\n"
+		"\ttime_to_eat (in milliseconds)\n"
+		"\ttime_to_sleep (in milliseconds)\n"
+		"\tnumber_of_times_each_philosopher_must_eat (optional)\n"
+		"\tPlease enter positive integer for each argument.\n");
 	return (0);
 }
 
