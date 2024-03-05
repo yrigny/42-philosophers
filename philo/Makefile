@@ -2,7 +2,7 @@ CC		= cc
 
 CFLAGS		= -Wall -Wextra -Werror -pthread
 
-CFILES		= main.c parse_init.c simulate.c
+CFILES		= parse_init.c simulate.c utils.c
 
 OFILES		= $(CFILES:.c=.o)
 
