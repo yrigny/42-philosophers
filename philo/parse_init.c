@@ -24,8 +24,8 @@ void	init_philo(t_set *env)
 		(env->philo)[i].nb_philo = env->nb_philo;
 		(env->philo)[i].time_eat = env->time_eat;
 		(env->philo)[i].time_sleep = env->time_sleep;
-		(env->philo)[i].must_eat_option_on = env->must_eat_option_on;
-		(env->philo)[i].meal_to_eat = env->must_eat;
+		(env->philo)[i].option_on = env->option_on;
+		(env->philo)[i].left_to_eat = env->must_eat;
 		(env->philo)[i].fork_l = i;
 		(env->philo)[i].fork_r = (i + 1) % env->nb_philo;
 		(env->philo)[i].last_meal = 0;
@@ -46,16 +46,16 @@ int	init_all(t_set *env)
 	env->philo = malloc(sizeof(t_philo) * env->nb_philo);
 	env->mutex_fork = malloc(sizeof(pthread_mutex_t) * env->nb_philo);
 	env->mutex_last_meal = malloc(sizeof(pthread_mutex_t) * env->nb_philo);
-	env->mutex_meal_to_eat = malloc(sizeof(pthread_mutex_t) * env->nb_philo);
+	env->mutex_left_to_eat = malloc(sizeof(pthread_mutex_t) * env->nb_philo);
 	if (!env->philo || !env->mutex_fork || !env->mutex_last_meal
-		|| !env->mutex_meal_to_eat)
+		|| !env->mutex_left_to_eat)
 		return (0);
 	i = -1;
 	while (++i < env->nb_philo)
 	{
 		pthread_mutex_init(&env->mutex_fork[i], NULL);
 		pthread_mutex_init(&env->mutex_last_meal[i], NULL);
-		pthread_mutex_init(&env->mutex_meal_to_eat[i], NULL);
+		pthread_mutex_init(&env->mutex_left_to_eat[i], NULL);
 	}
 	init_philo(env);
 	return (1);
@@ -106,10 +106,10 @@ int	parse_arg(int ac, char **av, t_set *env)
 	if (valid_args && ac == 5)
 	{
 		env->must_eat = 0;
-		env->must_eat_option_on = 0;
+		env->option_on = 0;
 	}
 	else if (valid_args && ac == 6)
-		env->must_eat_option_on = 1;
+		env->option_on = 1;
 	return (valid_args);
 }
 

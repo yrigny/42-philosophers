@@ -34,8 +34,8 @@ typedef struct s_philo
 	int				nb_philo;
 	int				time_eat;
 	int				time_sleep;
-	int				must_eat_option_on;
-	int				meal_to_eat;
+	int				option_on;
+	int				left_to_eat;
 	int				fork_l;
 	int				fork_r;
 	long			last_meal;
@@ -52,11 +52,11 @@ typedef struct s_set
 	int				time_eat;
 	int				time_sleep;
 	int				must_eat;
-	int				must_eat_option_on;
+	int				option_on;
 	pthread_mutex_t	mutex_printf;
 	pthread_mutex_t	mutex_all_alive;
 	pthread_mutex_t	*mutex_fork;
-	pthread_mutex_t	*mutex_meal_to_eat;
+	pthread_mutex_t	*mutex_left_to_eat;
 	pthread_mutex_t	*mutex_last_meal;
 	t_philo			*philo;
 }					t_set;
@@ -76,8 +76,8 @@ void	printmsg(t_set *env, int id, int status);
 
 /*utils*/
 long	get_ts_in_ms(struct timeval current, struct timeval start);
-void	meal_to_eat_minus(t_set *env, t_philo *phl);
-int		meal_left_to_eat(t_set *env, t_philo *phl);
+void	left_to_eat_minus(t_set *env, t_philo *phl);
+int		left_to_eat(t_set *env, t_philo *phl);
 int		philo_all_alive(t_set *env);
 void	free_all(t_set *env);
 

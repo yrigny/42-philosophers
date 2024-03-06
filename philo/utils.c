@@ -28,20 +28,20 @@ long	get_ts_in_ms(struct timeval current, struct timeval start)
 	return (ts_s * 1000 + ts_us / 1000);
 }
 
-void	meal_to_eat_minus(t_set *env, t_philo *phl)
+void	left_to_eat_minus(t_set *env, t_philo *phl)
 {
-	pthread_mutex_lock(&env->mutex_meal_to_eat[phl->id - 1]);
-	phl->meal_to_eat -= 1;
-	pthread_mutex_unlock(&env->mutex_meal_to_eat[phl->id - 1]);
+	pthread_mutex_lock(&env->mutex_left_to_eat[phl->id - 1]);
+	phl->left_to_eat -= 1;
+	pthread_mutex_unlock(&env->mutex_left_to_eat[phl->id - 1]);
 }
 
-int	meal_left_to_eat(t_set *env, t_philo *phl)
+int	left_to_eat(t_set *env, t_philo *phl)
 {
 	int	meal_left_to_eat;
 
-	pthread_mutex_lock(&env->mutex_meal_to_eat[phl->id - 1]);
-	meal_left_to_eat = phl->meal_to_eat;
-	pthread_mutex_unlock(&env->mutex_meal_to_eat[phl->id - 1]);
+	pthread_mutex_lock(&env->mutex_left_to_eat[phl->id - 1]);
+	meal_left_to_eat = phl->left_to_eat;
+	pthread_mutex_unlock(&env->mutex_left_to_eat[phl->id - 1]);
 	return (meal_left_to_eat);
 }
 
@@ -64,12 +64,12 @@ void	free_all(t_set *env)
 	{
 		pthread_mutex_destroy(&env->mutex_fork[i]);
 		pthread_mutex_destroy(&env->mutex_last_meal[i]);
-		pthread_mutex_destroy(&env->mutex_meal_to_eat[i]);
+		pthread_mutex_destroy(&env->mutex_left_to_eat[i]);
 	}
 	pthread_mutex_destroy(&env->mutex_printf);
 	pthread_mutex_destroy(&env->mutex_all_alive);
 	free(env->mutex_fork);
 	free(env->mutex_last_meal);
-	free(env->mutex_meal_to_eat);
+	free(env->mutex_left_to_eat);
 	free(env->philo);
 }

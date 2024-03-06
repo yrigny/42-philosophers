@@ -52,13 +52,15 @@ void	philo_eat(t_set *env, t_philo *phl)
 		printmsg(env, phl->id, FORK);
 		printmsg(env, phl->id, EAT);
 		usleep(1000 * phl->time_eat);
-		gettimeofday(&phl->current, NULL);
-		pthread_mutex_lock(&env->mutex_last_meal[phl->id - 1]);
-		phl->last_meal = get_ts_in_ms(phl->current, phl->start);
-		pthread_mutex_unlock(&env->mutex_last_meal[phl->id - 1]);
 	}
 	pthread_mutex_unlock(&env->mutex_fork[phl->fork_r]);
 	pthread_mutex_unlock(&env->mutex_fork[phl->fork_l]);
+	gettimeofday(&phl->current, NULL);
+	pthread_mutex_lock(&env->mutex_last_meal[phl->id - 1]);
+	phl->last_meal = get_ts_in_ms(phl->current, phl->start);
+	pthread_mutex_unlock(&env->mutex_last_meal[phl->id - 1]);
+	if (phl->option_on)
+		left_to_eat_minus(env, phl);
 }
 
 void	*routine(void *philo)
@@ -73,11 +75,7 @@ void	*routine(void *philo)
 	while (philo_all_alive(env))
 	{
 		philo_eat(env, phl);
-		if (phl->nb_philo == 1)
-			break ;
-		if (phl->must_eat_option_on)
-			meal_to_eat_minus(env, phl);
-		if (phl->must_eat_option_on && !meal_left_to_eat(env, phl))
+		if (phl->nb_philo < 2 || (phl->option_on && !left_to_eat(env, phl)))
 			break ;
 		if (philo_all_alive(env))
 		{
@@ -85,7 +83,11 @@ void	*routine(void *philo)
 			usleep(1000 * phl->time_sleep);
 		}
 		if (philo_all_alive(env))
+		{
 			printmsg(env, phl->id, THINK);
+			if (phl->nb_philo % 2 == 1 && phl->time_eat >= phl->time_sleep)
+				usleep(1000 * phl->time_eat);
+		}
 	}
 	return (NULL);
 }
@@ -94,7 +96,7 @@ void	check_famine(t_set *env, int *philo_all_done, t_philo *phl, long time)
 {
 	long	philo_hungry;
 
-	if (env->must_eat_option_on && !meal_left_to_eat(env, phl))
+	if (env->option_on && !left_to_eat(env, phl))
 		*philo_all_done += 1;
 	else
 	{
@@ -125,7 +127,7 @@ void	monitor(t_set *env)
 		i = -1;
 		while (philo_all_alive(env) && ++i < env->nb_philo)
 			check_famine(env, &philo_all_done, &env->philo[i], time);
-		if (env->must_eat_option_on && philo_all_done == env->nb_philo)
+		if (env->option_on && philo_all_done == env->nb_philo)
 			break ;
 		if (!philo_all_alive(env))
 			break ;
