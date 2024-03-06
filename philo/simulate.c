@@ -51,14 +51,14 @@ void	philo_eat(t_set *env, t_philo *phl)
 		printmsg(env, phl->id, FORK);
 		printmsg(env, phl->id, FORK);
 		printmsg(env, phl->id, EAT);
+		gettimeofday(&phl->current, NULL);
+		pthread_mutex_lock(&env->mutex_last_meal[phl->id - 1]);
+		phl->last_meal = get_ts_in_ms(phl->current, phl->start);
+		pthread_mutex_unlock(&env->mutex_last_meal[phl->id - 1]);
 		usleep(1000 * phl->time_eat);
 	}
 	pthread_mutex_unlock(&env->mutex_fork[phl->fork_r]);
 	pthread_mutex_unlock(&env->mutex_fork[phl->fork_l]);
-	gettimeofday(&phl->current, NULL);
-	pthread_mutex_lock(&env->mutex_last_meal[phl->id - 1]);
-	phl->last_meal = get_ts_in_ms(phl->current, phl->start);
-	pthread_mutex_unlock(&env->mutex_last_meal[phl->id - 1]);
 	if (phl->option_on)
 		left_to_eat_minus(env, phl);
 }
